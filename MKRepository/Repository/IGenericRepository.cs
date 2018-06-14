@@ -5,26 +5,26 @@ using System.Threading.Tasks;
 
 namespace MK.Repository
 {
-    public interface IGenericRepository<TEntity> where TEntity : class
+    public interface IGenericRepository<T> where T : class
     {
-        List<TEntity> AddRange(List<TEntity> TEnities);
+        List<T> AddRange(List<T> TEnities);
         Task<int> CountAsync();
-        Task<int> CountAsync(Expression<Func<TEntity, bool>> predicate, params Expression<Func<TEntity, object>>[] includes);
-        void Delete(Expression<Func<TEntity, bool>> where);
-        void Delete(TEntity entityToDelete);
+        Task<int> CountAsync(Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] includes);
+        void Delete(Expression<Func<T, bool>> where);
+        void Delete(T entityToDelete);
         Task<bool> ExistsAsync(object primaryKey);
-        Task<IEnumerable<TEntity>> GetAllAsync();
-        Task<IEnumerable<TEntity>> GetAllWithIncludeAsync(List<string> includes);
-        Task<IEnumerable<TEntity>> GetAllWithIncludePage(List<string> includes, string filterKey = "", string value = "");
-        Task<TEntity> GetByIDAsync(object id);
-        Task<TEntity> GetFirstAsync(Expression<Func<TEntity, bool>> predicate, params Expression<Func<TEntity, object>>[] includes);
-        Task<IEnumerable<TEntity>> GetWithIncludeAsync(Expression<Func<TEntity, bool>> predicate, params Expression<Func<TEntity, object>>[] includes);
-        dynamic GroupByCount<Tkey>(Func<TEntity, Tkey> predicate, Func<TEntity, bool> filter, Func<TEntity, object> AdditionalData = null, params string[] include);
-        dynamic GroupBySum<Tkey>(Func<TEntity, Tkey> predicate, Func<TEntity, bool> filter, Func<TEntity, decimal> Selector, params string[] include);
-        TEntity Insert(TEntity entity);
+        Task<IEnumerable<T>> GetAllAsync();
+        Task<IEnumerable<T>> GetAllWithIncludeAsync(List<string> includes);
+        Task<IEnumerable<T>> GetAllWithIncludePage(List<string> includes, string filterKey = "", string value = "");
+        Task<T> GetByIDAsync(object id);
+        Task<T> GetFirstAsync(Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] includes);
+        Task<IEnumerable<T>> GetWithIncludeAsync(Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] includes);
+        dynamic GroupByCount<Tkey>(Func<T, Tkey> predicate, Func<T, bool> filter, Func<T, object> AdditionalData = null, params string[] include);
+        dynamic GroupBySum<Tkey>(Func<T, Tkey> predicate, Func<T, bool> filter, Func<T, decimal> Selector, params string[] include);
+        T Insert(T entity);
         void setEntryState(object entities);
-        Task<IEnumerable<TEntity>> TakeWithIncludeAsync(Expression<Func<TEntity, bool>> predicate, int page, params Expression<Func<TEntity, object>>[] includes);
-        void Update(TEntity entityToUpdate, bool exclude = true, params string[] properties);
-        void UpdateRange(List<TEntity> TEnities);
+        Task<IEnumerable<T>> TakeWithIncludeAsync(Expression<Func<T, bool>> predicate, int page, params Expression<Func<T, object>>[] includes);
+        void Update(T entityToUpdate, bool exclude = true, params string[] properties);
+        void UpdateRange(List<T> TEnities);
     }
 }

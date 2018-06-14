@@ -14,13 +14,13 @@ namespace MK.Repository
     /// <summary>  
     /// Generic Repository class for Entity Operations  
     /// </summary>  
-    /// <typeparam name="TEntity"></typeparam>  
-    public class GenericRepository<TEntity> : IGenericRepository<TEntity> 
-        where TEntity : class
+    /// <typeparam name="T"></typeparam>  
+    public class GenericRepository<T> : IGenericRepository<T> 
+        where T : class
     {
         #region Private member variables...
         internal DbContext Context;
-        internal DbSet<TEntity> DbSet;
+        internal DbSet<T> DbSet;
         #endregion
 
         #region Public Constructor...
@@ -31,7 +31,7 @@ namespace MK.Repository
         public GenericRepository(DbContext context)
         {
             this.Context = context;
-            this.DbSet = context.Set<TEntity>();
+            this.DbSet = context.Set<T>();
         }
         #endregion
 
@@ -41,7 +41,7 @@ namespace MK.Repository
         /// </summary>  
         /// <param name="id"></param>  
         /// <returns></returns>  
-        public async virtual Task<TEntity> GetByIDAsync(object id)
+        public async virtual Task<T> GetByIDAsync(object id)
         {
             return await DbSet.FindAsync(id);
         }
@@ -50,7 +50,7 @@ namespace MK.Repository
         /// generic Insert method for the entities  
         /// </summary>  
         /// <param name="entity"></param>  
-        public virtual TEntity Insert(TEntity entity)
+        public virtual T Insert(T entity)
         {
             return DbSet.Add(entity);
         }
@@ -59,11 +59,11 @@ namespace MK.Repository
         /// Generic Delete method for the entities  
         /// </summary>  
         /// <param name="entityToDelete"></param>  
-        public virtual void Delete(TEntity entityToDelete)
+        public virtual void Delete(T entityToDelete)
         {
             DbSet.Remove(entityToDelete);
         }
-        public virtual void Delete(Expression<Func<TEntity, bool>> where)
+        public virtual void Delete(Expression<Func<T, bool>> where)
         {
             var query = DbSet.Where(where);
             DbSet.RemoveRange(query);
@@ -72,7 +72,7 @@ namespace MK.Repository
         /// Generic update method for the entities  
         /// </summary>  
         /// <param name="entityToUpdate"></param>  
-        public virtual void Update(TEntity entityToUpdate, bool exclude = true, params string[] properties)
+        public virtual void Update(T entityToUpdate, bool exclude = true, params string[] properties)
         {
             //to check if entity exist in current context
             var attahcedObj = DbSet.Local.FirstOrDefault(x => ((dynamic)x).Id == ((dynamic)entityToUpdate).Id);
@@ -121,10 +121,10 @@ namespace MK.Repository
             return false;
         }
 
-        private void ExcludeProperty(TEntity entityToUpdate, string[] excluded)
+        private void ExcludeProperty(T entityToUpdate, string[] excluded)
         {
             var objectContext = ((IObjectContextAdapter)Context).ObjectContext;
-            foreach (var entry in objectContext.ObjectStateManager.GetObjectStateEntries(System.Data.Entity.EntityState.Modified).Where(entity => entity.Entity.GetType() == typeof(TEntity)))
+            foreach (var entry in objectContext.ObjectStateManager.GetObjectStateEntries(System.Data.Entity.EntityState.Modified).Where(entity => entity.Entity.GetType() == typeof(T)))
             {
                 foreach (var item in excluded)
                 {
@@ -138,7 +138,7 @@ namespace MK.Repository
         /// generic method to fetch all the records from db  
         /// </summary>  
         /// <returns></returns>  
-        public async virtual Task<IEnumerable<TEntity>> GetAllAsync()
+        public async virtual Task<IEnumerable<T>> GetAllAsync()
         {
             return await DbSet.ToListAsync();
         }
@@ -149,8 +149,8 @@ namespace MK.Repository
         /// <param name="predicate"></param>  
         /// <param name="include"></param>  
         /// <returns></returns>  
-        public async Task<IEnumerable<TEntity>> GetWithIncludeAsync(Expression<Func<TEntity, bool>> predicate, 
-            params Expression<Func<TEntity, object>>[] includes)
+        public async Task<IEnumerable<T>> GetWithIncludeAsync(Expression<Func<T, bool>> predicate, 
+            params Expression<Func<T, object>>[] includes)
         {
             var query = DbSet.Where(predicate);
             foreach (var item in includes)
@@ -174,23 +174,23 @@ namespace MK.Repository
         /// </summary>  
         /// <param name="predicate">Criteria to match on</param>  
         /// <returns>A single record that matches the specified criteria</returns>  
-        public async Task<TEntity> GetFirstAsync(Expression<Func<TEntity, bool>> predicate,
-            params Expression<Func<TEntity, object>>[] includes)
+        public async Task<T> GetFirstAsync(Expression<Func<T, bool>> predicate,
+            params Expression<Func<T, object>>[] includes)
         {
             var query = DbSet.Where(predicate);
             foreach (var item in includes)
             {
                 query = query.Include(item);
             }
-            return await DbSet.FirstOrDefaultAsync<TEntity>(predicate);
+            return await DbSet.FirstOrDefaultAsync<T>(predicate);
         }
 
-        public List<TEntity> AddRange(List<TEntity> TEnities)
+        public List<T> AddRange(List<T> TEnities)
         {
             this.DbSet.AddRange(TEnities);
             return TEnities;
         }
-        public void UpdateRange(List<TEntity> TEnities)
+        public void UpdateRange(List<T> TEnities)
         {
             TEnities.ForEach(x =>
             {
@@ -203,8 +203,8 @@ namespace MK.Repository
         /// </summary>  
         /// <param name="where"></param>  
         /// <returns></returns>  
-        public async virtual Task<int> CountAsync(Expression<Func<TEntity, bool>> predicate,
-            params Expression<Func<TEntity, object>>[] includes)
+        public async virtual Task<int> CountAsync(Expression<Func<T, bool>> predicate,
+            params Expression<Func<T, object>>[] includes)
         {
             var query = DbSet.Where(predicate);
             foreach (var item in includes)
@@ -226,8 +226,8 @@ namespace MK.Repository
             }
 
         }
-        public async Task<IEnumerable<TEntity>> TakeWithIncludeAsync(Expression<Func<TEntity, bool>> predicate
-           , int page, params Expression<Func<TEntity, object>>[] includes)
+        public async Task<IEnumerable<T>> TakeWithIncludeAsync(Expression<Func<T, bool>> predicate
+           , int page, params Expression<Func<T, object>>[] includes)
         {
             var query = DbSet.Where(predicate);
             foreach (var item in includes)
@@ -237,10 +237,10 @@ namespace MK.Repository
 
             return await query.Take(page).ToListAsync();
         }
-        public dynamic GroupByCount<Tkey>(Func<TEntity, Tkey> predicate, Func<TEntity, bool> filter, 
-            Func<TEntity, object> AdditionalData = null, params string[] include)
+        public dynamic GroupByCount<Tkey>(Func<T, Tkey> predicate, Func<T, bool> filter, 
+            Func<T, object> AdditionalData = null, params string[] include)
         {
-            IQueryable<TEntity> query = this.DbSet;
+            IQueryable<T> query = this.DbSet;
             if (include != null)
             {
                 query = include.Aggregate(query, (current, inc) => current.Include(inc));
@@ -249,9 +249,9 @@ namespace MK.Repository
             return query.Where(filter).GroupBy(predicate).Select(x => new { key = x.Key, count = x.Count(),
                 Data = AdditionalData != null ? x.Select(AdditionalData).Distinct().ToList() : null });
         }
-        public dynamic GroupBySum<Tkey>(Func<TEntity, Tkey> predicate, Func<TEntity, bool> filter, Func<TEntity, decimal> Selector, params string[] include)
+        public dynamic GroupBySum<Tkey>(Func<T, Tkey> predicate, Func<T, bool> filter, Func<T, decimal> Selector, params string[] include)
         {
-            IQueryable<TEntity> query = this.DbSet;
+            IQueryable<T> query = this.DbSet;
             if (include != null)
             {
                 query = include.Aggregate(query, (current, inc) => current.Include(inc));
@@ -259,9 +259,9 @@ namespace MK.Repository
             }
             return query.Where(filter).GroupBy(predicate).Select(x => new { key = x.Key, sum = x.Sum(Selector) }).ToList();
         }
-        public async virtual Task<IEnumerable<TEntity>> GetAllWithIncludePage(List<string> includes, string filterKey = "", string value = "")
+        public async virtual Task<IEnumerable<T>> GetAllWithIncludePage(List<string> includes, string filterKey = "", string value = "")
         {
-            IQueryable<TEntity> query = this.DbSet;
+            IQueryable<T> query = this.DbSet;
             //install library that convert to lamda expression
             //if (includes != null)
             //{
@@ -274,7 +274,7 @@ namespace MK.Repository
             //}
             return await query.ToListAsync();
         }
-        public async virtual Task<IEnumerable<TEntity>> GetAllWithIncludeAsync(List<string> includes)
+        public async virtual Task<IEnumerable<T>> GetAllWithIncludeAsync(List<string> includes)
         {
             foreach (var item in includes)
             {
