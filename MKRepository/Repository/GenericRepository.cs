@@ -15,7 +15,8 @@ namespace MK.Repository
     /// Generic Repository class for Entity Operations  
     /// </summary>  
     /// <typeparam name="TEntity"></typeparam>  
-    public class GenericRepository<TEntity>  where TEntity : class
+    public class GenericRepository<TEntity> : IGenericRepository<TEntity> 
+        where TEntity : class
     {
         #region Private member variables...
         internal DbContext Context;
