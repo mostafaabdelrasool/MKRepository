@@ -79,7 +79,6 @@ namespace MK.Repository
 
             if (attahcedObj != null)
             {
-
                 Context.Entry(attahcedObj).CurrentValues.SetValues(entityToUpdate);
                 if (exclude)
                 {

@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>$id$</id>
+    <version>$version$</version>
+    <title>$title$</title>
+    <authors>MK</authors>
+    <owners>MK</owners>
+    <licenseUrl>https://github.com/mostafaabdelrasool/MKRepository/blob/master/LICENSE</licenseUrl>
+    <projectUrl>https://github.com/mostafaabdelrasool/MKRepository</projectUrl>
+    <iconUrl>https://github.com/mostafaabdelrasool/MKMapper/blob/master/MKMapper/MKMapper/logo.png</iconUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Create a wrapper above entity framework with repository pattern and unit of work</description>
+    <releaseNotes></releaseNotes>
+    <copyright>Copyright 2018</copyright>
+    <tags></tags>
+  </metadata>
+</package>
