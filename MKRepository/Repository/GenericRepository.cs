@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MKRepository.EFFunctions;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
@@ -15,7 +16,7 @@ namespace MK.Repository
     /// Generic Repository class for Entity Operations  
     /// </summary>  
     /// <typeparam name="T"></typeparam>  
-    public class GenericRepository<T> : IGenericRepository<T> 
+    public class GenericRepository<T> : IGenericRepository<T>
         where T : class
     {
         #region Private member variables...
@@ -35,17 +36,7 @@ namespace MK.Repository
         }
         #endregion
 
-        #region Public member methods...
-
-        /// Generic get method on the basis of id for Entities.  
-        /// </summary>  
-        /// <param name="id"></param>  
-        /// <returns></returns>  
-        public async virtual Task<T> GetByIDAsync(object id)
-        {
-            return await DbSet.FindAsync(id);
-        }
-
+        #region CUD
         /// <summary>  
         /// generic Insert method for the entities  
         /// </summary>  
@@ -76,63 +67,58 @@ namespace MK.Repository
         {
             //to check if entity exist in current context
             var attahcedObj = DbSet.Local.FirstOrDefault(x => ((dynamic)x).Id == ((dynamic)entityToUpdate).Id);
-
             if (attahcedObj != null)
             {
                 Context.Entry(attahcedObj).CurrentValues.SetValues(entityToUpdate);
-                if (exclude)
-                {
-                    ExcludeProperty(attahcedObj, properties);
-                }
-                else
-                {
-                    var allExcluded = entityToUpdate.GetType().GetProperties()
-                            .Where(x => getEleminatedPro(x, properties)).Select(x => x.Name);
-                    ExcludeProperty(attahcedObj, allExcluded.ToArray());
-                }
-
             }
             else
             {
                 DbSet.Attach(entityToUpdate);
                 Context.Entry(entityToUpdate).State = System.Data.Entity.EntityState.Modified;
-                if (exclude)
-                {
-                    ExcludeProperty(attahcedObj, properties);
-                }
-                else
-                {
-                    var allExcluded = entityToUpdate.GetType().GetProperties()
-                            .Where(x => getEleminatedPro(x, properties)).Select(x => x.Name);
-                    ExcludeProperty(attahcedObj, allExcluded.ToArray());
-                }
+            }
+            if (exclude)
+            {
+                PropertiesFunctions.ExcludeProperty<T>(Context, properties);
+            }
+            else
+            {
+                var allExcluded = entityToUpdate.GetType().GetProperties()
+                        .Where(x => PropertiesFunctions.getEleminatedPro(x, properties)).Select(x => x.Name);
+                PropertiesFunctions.ExcludeProperty<T>(Context, allExcluded.ToArray());
             }
         }
+        public List<T> AddRange(List<T> TEnities)
+        {
+            this.DbSet.AddRange(TEnities);
+            return TEnities;
+        }
+        public void UpdateRange(List<T> TEnities)
+        {
+            TEnities.ForEach(x =>
+            {
+                this.Update(x);
+            });
 
-        private bool getEleminatedPro(PropertyInfo x, params string[] properties)
+        }
+        public void setEntryState(object entities)
         {
 
-            if ((!x.PropertyType.IsInterface && !x.PropertyType.IsClass
-                || x.PropertyType.Name == "String") && !properties.Contains(x.Name))
+            foreach (var item in (IEnumerable)entities)
             {
-                return true;
+                Context.Entry(item).State = System.Data.Entity.EntityState.Unchanged;
             }
-            return false;
-        }
 
-        private void ExcludeProperty(T entityToUpdate, string[] excluded)
+        }
+        #endregion
+        #region Getting Functions
+        /// Generic get method on the basis of id for Entities.  
+        /// </summary>  
+        /// <param name="id"></param>  
+        /// <returns></returns>  
+        public async virtual Task<T> GetByIDAsync(object id)
         {
-            var objectContext = ((IObjectContextAdapter)Context).ObjectContext;
-            foreach (var entry in objectContext.ObjectStateManager.GetObjectStateEntries(System.Data.Entity.EntityState.Modified).Where(entity => entity.Entity.GetType() == typeof(T)))
-            {
-                foreach (var item in excluded)
-                {
-                    entry.RejectPropertyChanges(item);
-                }
-
-            }
+            return await DbSet.FindAsync(id);
         }
-
         /// <summary>  
         /// generic method to fetch all the records from db  
         /// </summary>  
@@ -148,16 +134,24 @@ namespace MK.Repository
         /// <param name="predicate"></param>  
         /// <param name="include"></param>  
         /// <returns></returns>  
-        public async Task<IEnumerable<T>> GetWithIncludeAsync(Expression<Func<T, bool>> predicate, 
+        public async Task<IEnumerable<T>> GetWithIncludeAsync(Expression<Func<T, bool>> predicate,
             params Expression<Func<T, object>>[] includes)
+        {
+            IQueryable<T> query = ImplementQueryInclude(predicate, includes);
+            return await query.ToListAsync();
+        }
+
+        private IQueryable<T> ImplementQueryInclude(Expression<Func<T, bool>> predicate, Expression<Func<T, object>>[] includes)
         {
             var query = DbSet.Where(predicate);
             foreach (var item in includes)
             {
                 query = query.Include(item);
             }
-            return await query.ToListAsync();
+
+            return query;
         }
+
         /// <summary>  
         /// Generic method to check if entity exists  
         /// </summary>  
@@ -176,27 +170,11 @@ namespace MK.Repository
         public async Task<T> GetFirstAsync(Expression<Func<T, bool>> predicate,
             params Expression<Func<T, object>>[] includes)
         {
-            var query = DbSet.Where(predicate);
-            foreach (var item in includes)
-            {
-                query = query.Include(item);
-            }
+            IQueryable<T> query = ImplementQueryInclude(predicate, includes);
             return await DbSet.FirstOrDefaultAsync<T>(predicate);
         }
 
-        public List<T> AddRange(List<T> TEnities)
-        {
-            this.DbSet.AddRange(TEnities);
-            return TEnities;
-        }
-        public void UpdateRange(List<T> TEnities)
-        {
-            TEnities.ForEach(x =>
-            {
-                this.Update(x);
-            });
 
-        }
         /// <summary>  
         /// generic method to get count record on the basis of a condition but query able.  
         /// </summary>  
@@ -205,38 +183,21 @@ namespace MK.Repository
         public async virtual Task<int> CountAsync(Expression<Func<T, bool>> predicate,
             params Expression<Func<T, object>>[] includes)
         {
-            var query = DbSet.Where(predicate);
-            foreach (var item in includes)
-            {
-                query = query.Include(item);
-            }
+            IQueryable<T> query = ImplementQueryInclude(predicate, includes);
             return await query.CountAsync();
         }
         public async virtual Task<int> CountAsync()
         {
             return await DbSet.CountAsync();
         }
-        public void setEntryState(object entities)
-        {
 
-            foreach (var item in (IEnumerable)entities)
-            {
-                Context.Entry(item).State = System.Data.Entity.EntityState.Unchanged;
-            }
-
-        }
         public async Task<IEnumerable<T>> TakeWithIncludeAsync(Expression<Func<T, bool>> predicate
            , int page, params Expression<Func<T, object>>[] includes)
         {
-            var query = DbSet.Where(predicate);
-            foreach (var item in includes)
-            {
-                query = query.Include(item);
-            }
-
+            IQueryable<T> query = ImplementQueryInclude(predicate, includes);
             return await query.Take(page).ToListAsync();
         }
-        public dynamic GroupByCount<Tkey>(Func<T, Tkey> predicate, Func<T, bool> filter, 
+        public dynamic GroupByCount<Tkey>(Func<T, Tkey> predicate, Func<T, bool> filter,
             Func<T, object> AdditionalData = null, params string[] include)
         {
             IQueryable<T> query = this.DbSet;
@@ -245,8 +206,12 @@ namespace MK.Repository
                 query = include.Aggregate(query, (current, inc) => current.Include(inc));
                 //query = query.FilterIsDelete(include);
             }
-            return query.Where(filter).GroupBy(predicate).Select(x => new { key = x.Key, count = x.Count(),
-                Data = AdditionalData != null ? x.Select(AdditionalData).Distinct().ToList() : null });
+            return query.Where(filter).GroupBy(predicate).Select(x => new
+            {
+                key = x.Key,
+                count = x.Count(),
+                Data = AdditionalData != null ? x.Select(AdditionalData).Distinct().ToList() : null
+            });
         }
         public dynamic GroupBySum<Tkey>(Func<T, Tkey> predicate, Func<T, bool> filter, Func<T, decimal> Selector, params string[] include)
         {
@@ -282,7 +247,6 @@ namespace MK.Repository
             return await DbSet.ToListAsync();
         }
         #endregion
-
 
     }
 }
